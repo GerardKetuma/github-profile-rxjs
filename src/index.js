@@ -2,7 +2,14 @@ import Rx from 'rxjs/Rx'
 import axios from 'axios'
 
 const refreshButton = document.querySelector('.refresh')
+const closeButton1 = document.querySelector('.close1')
+const closeButton2 = document.querySelector('.close2')
+const closeButton3 = document.querySelector('.close3')
+
 const refreshClickStream = Rx.Observable.fromEvent(refreshButton, 'click')
+const close1ClickStream = Rx.Observable.fromEvent(closeButton1, 'click')
+const close2ClickStream = Rx.Observable.fromEvent(closeButton2, 'click')
+const close3ClickStream = Rx.Observable.fromEvent(closeButton3, 'click')
 
 const requestStream = refreshClickStream.startWith('startup click').map(() => {
   const randomOffset = Math.floor(Math.random() * 500)
@@ -12,15 +19,19 @@ const requestStream = refreshClickStream.startWith('startup click').map(() => {
 const responseStream = requestStream.mergeMap(requestUrl =>
   Rx.Observable.fromPromise(axios.get(requestUrl)))
 
-const createSuggestionStream = stream =>
-  stream
-    .map(response => response.data[Math.floor(Math.random() * response.data.length)])
+const createSuggestionStream = closeStream =>
+  closeStream
+    .startWith('startup click')
+    .combineLatest(
+      responseStream,
+      (click, response) => response.data[Math.floor(Math.random() * response.data.length)],
+    )
     .merge(refreshClickStream.map(() => null))
     .startWith(null)
 
-const suggestion1Stream = createSuggestionStream(responseStream)
-const suggestion2Stream = createSuggestionStream(responseStream)
-const suggestion3Stream = createSuggestionStream(responseStream)
+const suggestion1Stream = createSuggestionStream(close1ClickStream)
+const suggestion2Stream = createSuggestionStream(close2ClickStream)
+const suggestion3Stream = createSuggestionStream(close3ClickStream)
 
 /* Rendering function */
 const renderSuggestion = (suggestedUser, selector) => {
